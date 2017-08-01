@@ -1,0 +1,32 @@
+html {
+	height: 100%;
+}
+body {
+	height: 100%;
+}
+
+.main .column {
+	display: inline-block;
+	vertical-align: top;
+	padding: 0px 8px;
+}
+.main textarea {
+	display: block;
+	width: 100%;
+	overflow: hidden;
+	resize: none;
+	white-space: nowrap;
+	font-family: monospace;
+	margin: 2px;
+}
+.main #div_results {
+	padding: 4px;
+}
+.graph {
+	border: 1px solid lightgrey;
+	text-align: bottom;
+}
+.graph .point {
+	display: inline-block;
+	background: orange;
+}
