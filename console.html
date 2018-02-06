@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en-US">
+
+<head>
+	<title>DPD (console)</title>
+	<meta charset="utf-8">
+	<script src="./js/dpd.js"></script>
+	<link  href="./favicon.ico" rel="icon" type="image/x-icon">
+</head>
+
+<style>
+	main {
+		margin-top: 35px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}
+	main textarea {
+		display: block;
+		min-width: 95%;
+		max-width: 95%;
+		overflow: hidden;
+		font-size: 90%;
+		resize: none;
+		white-space: nowrap;
+		font-family: monospace;
+		margin: 2px;
+	}
+	#div_buttons {
+		position: absolute;
+		right: 0px;
+		top: 0px;
+	}
+	#div_buttons > button.active {
+		background: #AAAAAA;
+	}
+	button {
+		margin: 2px;
+		line-height: 1.25;
+		text-align: center;
+		white-space: nowrap;
+		vertical-align: middle;
+		user-select: none;
+		border: 1px solid black;
+		padding: .5rem 1rem;
+		font-size: 1rem;
+		border-radius: .25rem;
+		transition: all .2s ease-in-out;
+	}
+</style>
+
+<body>
+
+<main>
+
+<header>
+	<h2>Damage Probability Calculator (console)</h2>
+</header>
+
+<textarea id="textarea_codeinput" spellcheck="false"></textarea>
+<textarea id="textarea_output" spellcheck="false"></textarea>
+
+</main>
+
+<div id="div_buttons"></div>
+
+<script>(() => {
+	const buttonContainer = document.querySelector("#div_buttons");
+	const taInput = document.querySelector('#textarea_codeinput');
+	const taOutput = document.querySelector('#textarea_output');
+
+	const textareaFitContent = function textareaFitContent (ta) {
+		ta.style.width = "1px";
+		ta.style.width = `${ta.scrollWidth}px`;
+		ta.style.height = "1px";
+		ta.style.height = `${ta.scrollHeight}px`;
+	};
+	const stringifyObject = function stringifyObject (o, depth = 0) {
+		if (typeof o === "function")
+			return o.toString().replace(/\n/g, `\n${"\t".repeat(depth)}`);
+		if (o === null || typeof o !== "object")
+			return JSON.stringify(o);
+
+		let inner = Object.keys(o).map( key => `${"\t".repeat(depth + 1)}${key}: ${stringifyObject(o[key], depth + 1)}` );
+		if (inner.length)
+			inner = `\n${inner.join(",\n")}\n${"\t".repeat(depth)}`;
+
+		if (Array.isArray(o))
+			return `[${inner}]`;
+		return `{${inner}}`;
+	};
+	const runEval = function runEval (code) {
+		try {
+			const result = eval(`(function evalWrapper () { ${code} })()`);
+			taOutput.value = typeof result === "string" ? result : stringifyObject(result);
+		} catch (e) {
+			taOutput.value = `Error:\n\n${e.stack}`;
+			throw e;
+		} finally {
+			textareaFitContent(taOutput);
+		}
+	}
+
+	// update output as you type
+	taInput.addEventListener('input', () => runEval(taInput.value) );
+
+	// resize textareas as you type
+	[...document.querySelectorAll("textarea")].forEach( ta => {
+		ta.addEventListener('input', e => textareaFitContent(ta));
+	});
+
+	const codeExamples = {
+		"Clefable vs. Skarmory": "const skarmory = { maxHP: 334, hpDist: { \"334\": 1 } };\nconst roost = DPD.fromValues([-Math.floor(skarmory.maxHP/2)]);\nconst leftovers = DPD.fromValues([-Math.floor(skarmory.maxHP/16)]);\nconst stealthrock = DPD.fromValues([Math.floor(skarmory.maxHP/8)]);\n\nconst fireblast = DPD.fromMove(\n\t0.85,                                                               // accuracy\n\t[202,204,206,208,210,214,216,218,220,222,226,228,230,232,234,238],  // rolls\n\t1/24,                                                               // crit chance\n\t[302,306,308,312,316,320,322,326,330,334,338,340,344,348,352,356],  // crit rolls\n\tfalse,                                                              // multihit: false | number of hits | true (2-5 times with probabilities 1/3, 1/3, 1/6, 1/6)\n);\n\nconst hpDistributions = [\n\tDPD.damagePokemon(skarmory, stealthrock, fireblast, leftovers),  // turn 1\n\tDPD.damagePokemon(skarmory, roost, fireblast, leftovers),        // turn 2\n\tDPD.damagePokemon(skarmory, roost, fireblast, leftovers),        // turn 3\n\tDPD.damagePokemon(skarmory, roost, fireblast, leftovers),        // turn 4\n\tDPD.damagePokemon(skarmory, roost, fireblast, leftovers),        // turn 5\n\tDPD.damagePokemon(skarmory, roost, fireblast, leftovers),        // turn 6\n\tDPD.damagePokemon(skarmory, roost, fireblast, leftovers),        // turn 7\n\tDPD.damagePokemon(skarmory, roost, fireblast, leftovers),        // turn 8\n];\n\nreturn \"Including crits and misses. Not including 10% chance to burn:\\n\" + hpDistributions.map(\n\t(hpDist, t) => `${(100 * DPD.probability(hpDist, hp => hp === 0)).toFixed(0).padStart(2)}% chance to KO by turn ${t+1}.`\n).join(\"\\n\");",
+		"Bisharp vs. Quagsire": "const quagsire = { maxHP: 394, hpDist: { \"394\": 1 } };\n\nconst knockoff = DPD.fromMove(\n	1,                                                                  // accuracy\n	[135,138,139,141,142,144,145,147,148,150,151,153,154,156,157,160],  // rolls\n	1/24,                                                               // crit chance\n	[204,205,208,210,213,216,217,220,222,225,228,229,232,234,237,240],  // crit rolls\n	false,                                                              // multihit: false | number of hits | true (2-5 times with probabilities 1/3, 1/3, 1/6, 1/6)\n);\nconst zsuckerpunch = DPD.fromMove(\n	1,                                                                  // accuracy\n	[195,198,199,202,205,207,210,211,214,216,219,220,223,225,228,231],  // rolls\n	0,                                                                  // crit chance\n	[],                                                                 // crit rolls\n	false,                                                              // multihit: false | number of hits | true (2-5 times with probabilities 1/3, 1/3, 1/6, 1/6)\n);\nconst stealthrock = DPD.fromValues([ Math.floor(quagsire.maxHP/16) ]);\n\nconst hpDistributions = [\n	DPD.damagePokemon(quagsire, stealthrock, knockoff),  // turn 1\n	DPD.damagePokemon(quagsire, zsuckerpunch),           // turn 2\n];\n\nreturn \"Including crits and misses. Not including 10% chance to burn:\\n\" + hpDistributions.map(\n	(hpDist, t) => `${(100 * DPD.probability(hpDist, hp => hp === 0)).toFixed(0).padStart(2)}% chance to KO by turn ${t+1}.`\n).join(\"\\n\");",
+		"dice": "const diceRoll = DPD.fromValues(1,2,3,4,5,6);\nconst twoDice = DPD.chain(diceRoll, diceRoll);\n\nreturn [diceRoll, twoDice];",
+		"DPD sourcecode": "return DPD;",
+	};
+
+	for (const ex in codeExamples) {
+		const btn = document.createElement("BUTTON");
+		btn.innerText = ex;
+		buttonContainer.appendChild(btn);
+		btn.addEventListener('click', () => {
+			[...buttonContainer.childNodes].forEach( n => n.classList.remove("active") );
+			btn.classList.add("active");
+			taInput.value = codeExamples[ex];
+			textareaFitContent(taInput);
+			runEval(taInput.value);
+		});
+	}
+	buttonContainer.firstChild.click();
+
+})();</script>
+
+</body></html>

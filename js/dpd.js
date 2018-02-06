@@ -111,7 +111,7 @@ DPD.probability = function probability (dist, condition) {
 	// find the probability of a given condition inside a distribution
 	let p = 0, q = 0;
 	for (let v in dist) {
-		if (condition(v))
+		if (condition(Number(v)))
 			p += dist[v];
 		else q += dist[v];
 	}
