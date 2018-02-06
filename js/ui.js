@@ -72,7 +72,7 @@ ui.calc = function calc () {
 		
 		if (!isRecovery) {
 			tableRow.push(
-				tools.webimage("KO") + "<br>" +
+				tools.webimage("355") + "<br>" +
 				DPD.probability(
 					recipient.hpDist,
 					hp => hp === "0"

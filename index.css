@@ -5,12 +5,12 @@ body {
 	height: 100%;
 }
 
-.main .column {
+main .column {
 	display: inline-block;
 	vertical-align: top;
 	padding: 0px 8px;
 }
-.main textarea {
+main textarea {
 	display: block;
 	width: 100%;
 	overflow: hidden;
@@ -19,7 +19,7 @@ body {
 	font-family: monospace;
 	margin: 2px;
 }
-.main #div_results {
+main #div_results {
 	padding: 4px;
 }
 .graph {
@@ -29,4 +29,8 @@ body {
 .graph .point {
 	display: inline-block;
 	background: orange;
+}
+
+.p-icon {
+	background-image:url(./../brmt/sprites-full.png);
 }
