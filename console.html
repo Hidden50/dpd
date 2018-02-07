@@ -4,50 +4,11 @@
 <head>
 	<title>DPD (console)</title>
 	<meta charset="utf-8">
-	<script src="./js/dpd.js"></script>
-	<link  href="./favicon.ico" rel="icon" type="image/x-icon">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css">
+	<link rel="stylesheet" href="./vendor/editor.css">
+	<link rel="stylesheet" href="./css/console.css">
+	<link rel="icon"       href="./favicon.ico" type="image/x-icon">
 </head>
-
-<style>
-	main {
-		margin-top: 35px;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-	}
-	main textarea {
-		display: block;
-		min-width: 95%;
-		max-width: 95%;
-		overflow: hidden;
-		font-size: 90%;
-		resize: none;
-		white-space: nowrap;
-		font-family: monospace;
-		margin: 2px;
-	}
-	#div_buttons {
-		position: absolute;
-		right: 0px;
-		top: 0px;
-	}
-	#div_buttons > button.active {
-		background: #AAAAAA;
-	}
-	button {
-		margin: 2px;
-		line-height: 1.25;
-		text-align: center;
-		white-space: nowrap;
-		vertical-align: middle;
-		user-select: none;
-		border: 1px solid black;
-		padding: .5rem 1rem;
-		font-size: 1rem;
-		border-radius: .25rem;
-		transition: all .2s ease-in-out;
-	}
-</style>
 
 <body>
 
@@ -57,14 +18,20 @@
 	<h2>Damage Probability Calculator (console)</h2>
 </header>
 
-<textarea id="textarea_codeinput" spellcheck="false"></textarea>
-<textarea id="textarea_output" spellcheck="false"></textarea>
+<div class="editor-wrapper">
+	<textarea id="textarea_codeinput" wrap="off" class="editor allow-tabs" spellcheck="false"></textarea>
+	<pre><code class="syntax-highight js"></code></pre>
+</div>
+<div class="editor-wrapper">
+	<textarea id="textarea_output" wrap="off" class="editor allow-tabs" spellcheck="false" readonly="true"></textarea>
+	<pre><code class="syntax-highight js"></code></pre>
+</div>
 
 </main>
 
 <div id="div_buttons"></div>
 
-<script>(() => {
+<script>window.addEventListener('load', () => {
 	const buttonContainer = document.querySelector("#div_buttons");
 	const taInput = document.querySelector('#textarea_codeinput');
 	const taOutput = document.querySelector('#textarea_output');
@@ -73,17 +40,25 @@
 		ta.style.width = "1px";
 		ta.style.width = `${ta.scrollWidth}px`;
 		ta.style.height = "1px";
-		ta.style.height = `${ta.scrollHeight}px`;
+		const scrollHeight = ta.scrollHeight;
+		ta.style.height = `${scrollHeight}px`;
+		if (ta.classList.contains('editor')) {
+			if (ta.nextElementSibling.firstElementChild)
+				ta.nextElementSibling.firstElementChild.style.height = `${scrollHeight}px`;
+			ta.parentElement.style.height = `${scrollHeight + 2}px`;
+		}
+
+		hightlightSyntax();
 	};
 	const stringifyObject = function stringifyObject (o, depth = 0) {
 		if (typeof o === "function")
-			return o.toString().replace(/\n/g, `\n${"\t".repeat(depth)}`);
+			return o.toString().replace(/\r?\n/g, `\r\n${"\t".repeat(depth)}`);
 		if (o === null || typeof o !== "object")
 			return JSON.stringify(o);
 
 		let inner = Object.keys(o).map( key => `${"\t".repeat(depth + 1)}${key}: ${stringifyObject(o[key], depth + 1)}` );
 		if (inner.length)
-			inner = `\n${inner.join(",\n")}\n${"\t".repeat(depth)}`;
+			inner = `\r\n${inner.join(",\r\n")}\r\n${"\t".repeat(depth)}`;
 
 		if (Array.isArray(o))
 			return `[${inner}]`;
@@ -94,8 +69,7 @@
 			const result = eval(`(function evalWrapper () { ${code} })()`);
 			taOutput.value = typeof result === "string" ? result : stringifyObject(result);
 		} catch (e) {
-			taOutput.value = `Error:\n\n${e.stack}`;
-			throw e;
+			taOutput.value = `Error:\r\n\r\n${e.stack}`;
 		} finally {
 			textareaFitContent(taOutput);
 		}
@@ -106,13 +80,15 @@
 
 	// resize textareas as you type
 	[...document.querySelectorAll("textarea")].forEach( ta => {
+//		const timer = setInterval(() => textareaFitContent(ta), 2000);
+//		setTimeout( () => clearInterval(timer), 10000 );
 		ta.addEventListener('input', e => textareaFitContent(ta));
 	});
 
 	const codeExamples = {
-		"Clefable vs. Skarmory": "const skarmory = { maxHP: 334, hpDist: { \"334\": 1 } };\nconst roost = DPD.fromValues([-Math.floor(skarmory.maxHP/2)]);\nconst leftovers = DPD.fromValues([-Math.floor(skarmory.maxHP/16)]);\nconst stealthrock = DPD.fromValues([Math.floor(skarmory.maxHP/8)]);\n\nconst fireblast = DPD.fromMove(\n\t0.85,                                                               // accuracy\n\t[202,204,206,208,210,214,216,218,220,222,226,228,230,232,234,238],  // rolls\n\t1/24,                                                               // crit chance\n\t[302,306,308,312,316,320,322,326,330,334,338,340,344,348,352,356],  // crit rolls\n\tfalse,                                                              // multihit: false | number of hits | true (2-5 times with probabilities 1/3, 1/3, 1/6, 1/6)\n);\n\nconst hpDistributions = [\n\tDPD.damagePokemon(skarmory, stealthrock, fireblast, leftovers),  // turn 1\n\tDPD.damagePokemon(skarmory, roost, fireblast, leftovers),        // turn 2\n\tDPD.damagePokemon(skarmory, roost, fireblast, leftovers),        // turn 3\n\tDPD.damagePokemon(skarmory, roost, fireblast, leftovers),        // turn 4\n\tDPD.damagePokemon(skarmory, roost, fireblast, leftovers),        // turn 5\n\tDPD.damagePokemon(skarmory, roost, fireblast, leftovers),        // turn 6\n\tDPD.damagePokemon(skarmory, roost, fireblast, leftovers),        // turn 7\n\tDPD.damagePokemon(skarmory, roost, fireblast, leftovers),        // turn 8\n];\n\nreturn \"Including crits and misses. Not including 10% chance to burn:\\n\" + hpDistributions.map(\n\t(hpDist, t) => `${(100 * DPD.probability(hpDist, hp => hp === 0)).toFixed(0).padStart(2)}% chance to KO by turn ${t+1}.`\n).join(\"\\n\");",
-		"Bisharp vs. Quagsire": "const quagsire = { maxHP: 394, hpDist: { \"394\": 1 } };\n\nconst knockoff = DPD.fromMove(\n	1,                                                                  // accuracy\n	[135,138,139,141,142,144,145,147,148,150,151,153,154,156,157,160],  // rolls\n	1/24,                                                               // crit chance\n	[204,205,208,210,213,216,217,220,222,225,228,229,232,234,237,240],  // crit rolls\n	false,                                                              // multihit: false | number of hits | true (2-5 times with probabilities 1/3, 1/3, 1/6, 1/6)\n);\nconst zsuckerpunch = DPD.fromMove(\n	1,                                                                  // accuracy\n	[195,198,199,202,205,207,210,211,214,216,219,220,223,225,228,231],  // rolls\n	0,                                                                  // crit chance\n	[],                                                                 // crit rolls\n	false,                                                              // multihit: false | number of hits | true (2-5 times with probabilities 1/3, 1/3, 1/6, 1/6)\n);\nconst stealthrock = DPD.fromValues([ Math.floor(quagsire.maxHP/16) ]);\n\nconst hpDistributions = [\n	DPD.damagePokemon(quagsire, stealthrock, knockoff),  // turn 1\n	DPD.damagePokemon(quagsire, zsuckerpunch),           // turn 2\n];\n\nreturn \"Including crits and misses. Not including 10% chance to burn:\\n\" + hpDistributions.map(\n	(hpDist, t) => `${(100 * DPD.probability(hpDist, hp => hp === 0)).toFixed(0).padStart(2)}% chance to KO by turn ${t+1}.`\n).join(\"\\n\");",
-		"dice": "const diceRoll = DPD.fromValues(1,2,3,4,5,6);\nconst twoDice = DPD.chain(diceRoll, diceRoll);\n\nreturn [diceRoll, twoDice];",
+		"Clefable vs. Skarmory": "const skarmory = { maxHP: 334, hpDist: { \"334\": 1 } };\r\nconst roost = DPD.fromValues([-Math.floor(skarmory.maxHP/2)]);\r\nconst leftovers = DPD.fromValues([-Math.floor(skarmory.maxHP/16)]);\r\nconst stealthrock = DPD.fromValues([Math.floor(skarmory.maxHP/8)]);\r\n\r\nconst fireblast = DPD.fromMove(\r\n\t0.85,                                                               // accuracy\r\n\t[202,204,206,208,210,214,216,218,220,222,226,228,230,232,234,238],  // rolls\r\n\t1/24,                                                               // crit chance\r\n\t[302,306,308,312,316,320,322,326,330,334,338,340,344,348,352,356],  // crit rolls\r\n\tfalse,                                                              // multihit: false | number of hits | true (2-5 times with probabilities 1/3, 1/3, 1/6, 1/6)\r\n);\r\n\r\nconst hpDistributions = [\r\n\tDPD.damagePokemon(skarmory, stealthrock, fireblast, leftovers),  // turn 1\r\n\tDPD.damagePokemon(skarmory, roost, fireblast, leftovers),        // turn 2\r\n\tDPD.damagePokemon(skarmory, roost, fireblast, leftovers),        // turn 3\r\n\tDPD.damagePokemon(skarmory, roost, fireblast, leftovers),        // turn 4\r\n\tDPD.damagePokemon(skarmory, roost, fireblast, leftovers),        // turn 5\r\n\tDPD.damagePokemon(skarmory, roost, fireblast, leftovers),        // turn 6\r\n\tDPD.damagePokemon(skarmory, roost, fireblast, leftovers),        // turn 7\r\n\tDPD.damagePokemon(skarmory, roost, fireblast, leftovers),        // turn 8\r\n];\r\n\r\nreturn \"Including crits and misses. Not including 10% chance to burn:\\r\\n\" + hpDistributions.map( (hpDist, t) => {\r\n\tconst koChance = (100 * DPD.probability(hpDist, hp => hp === 0)).toFixed(0).padStart(2);\r\n\treturn `${koChance}% chance to KO by turn ${t+1}.`;\r\n}).join(\"\\r\\n\");",
+		"Bisharp vs. Quagsire": "const quagsire = { maxHP: 394, hpDist: { \"394\": 1 } };\r\n\r\nconst knockoff = DPD.fromMove(\r\n	1,                                                                  // accuracy\r\n	[135,138,139,141,142,144,145,147,148,150,151,153,154,156,157,160],  // rolls\r\n	1/24,                                                               // crit chance\r\n	[204,205,208,210,213,216,217,220,222,225,228,229,232,234,237,240],  // crit rolls\r\n	false,                                                              // multihit: false | number of hits | true (2-5 times with probabilities 1/3, 1/3, 1/6, 1/6)\r\n);\r\nconst zsuckerpunch = DPD.fromMove(\r\n	1,                                                                  // accuracy\r\n	[195,198,199,202,205,207,210,211,214,216,219,220,223,225,228,231],  // rolls\r\n	0,                                                                  // crit chance\r\n	[],                                                                 // crit rolls\r\n	false,                                                              // multihit: false | number of hits | true (2-5 times with probabilities 1/3, 1/3, 1/6, 1/6)\r\n);\r\nconst stealthrock = DPD.fromValues([ Math.floor(quagsire.maxHP/16) ]);\r\n\r\nconst hpDistributions = [\r\n	DPD.damagePokemon(quagsire, stealthrock, knockoff),  // turn 1\r\n	DPD.damagePokemon(quagsire, zsuckerpunch),           // turn 2\r\n];\r\n\r\nreturn \"Including crits and misses. Not including 10% chance to burn:\\r\\n\" + hpDistributions.map( (hpDist, t) => {\r\n\tconst koChance = (100 * DPD.probability(hpDist, hp => hp === 0)).toFixed(0).padStart(2);\r\n\treturn `${koChance}% chance to KO by turn ${t+1}.`;\r\n}).join(\"\\r\\n\");",
+		"dice": "const diceRoll = DPD.fromValues(1,2,3,4,5,6);\r\nconst twoDice = DPD.chain(diceRoll, diceRoll);\r\n\r\nreturn [diceRoll, twoDice];",
 		"DPD sourcecode": "return DPD;",
 	};
 
@@ -129,7 +105,12 @@
 		});
 	}
 	buttonContainer.firstChild.click();
+	hightlightSyntax();
+})</script>
 
-})();</script>
+<script src="./js/dpd.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+<script src="./vendor/editor.js"></script>
 
 </body></html>

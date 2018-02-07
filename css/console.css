@@ -1,0 +1,49 @@
+html, body {
+	margin: 0;
+	padding: 0;
+	height: 100%;
+	width: 100%;
+	background: #72c3c3;
+}
+
+main {
+	margin-top: 35px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+.editor-wrapper {
+	width: 95%;
+}
+main textarea {
+	min-width: 100%;
+	max-width: 100%;
+	display: block;
+	overflow: hidden;
+	font-size: 90%;
+	resize: none;
+	font-family: monospace;
+	margin: 2px;
+}
+#div_buttons {
+	position: fixed;
+	right: 0px;
+	top: 0px;
+}
+#div_buttons > button.active {
+	background: #AAAAAA;
+}
+button {
+	cursor: pointer;
+	margin: 2px;
+	line-height: 1.25;
+	text-align: center;
+	white-space: nowrap;
+	vertical-align: middle;
+	user-select: none;
+	border: 1px solid black;
+	padding: .5rem 1rem;
+	font-size: 1rem;
+	border-radius: .25rem;
+	transition: all .2s ease-in-out;
+}
